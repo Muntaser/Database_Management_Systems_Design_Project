@@ -1,0 +1,87 @@
+-- DDL Statements for Milestone 1
+-- Team 8
+
+CREATE TABLE Attribute
+(
+  AName VARCHAR(20) NOT NULL,
+  Multivalued NUMERIC(2) NOT NULL,
+  PRIMARY KEY (AName)
+);
+
+CREATE TABLE Entity
+(
+  EName VARCHAR(20) NOT NULL,
+  Type VARCHAR(20) NOT NULL,
+  PRIMARY KEY (EName)
+);
+
+CREATE TABLE Inheritance
+(
+  SName VARCHAR(20) NOT NULL,
+  Total CHAR(1) NOT NULL,
+  Overlapping CHAR(1) NOT NULL,
+  EName VARCHAR(20) NOT NULL,
+  PRIMARY KEY (SName),
+  FOREIGN KEY (EName) REFERENCES Entity(EName)
+);
+
+CREATE TABLE Relationship
+(
+  RName VARCHAR(20) NOT NULL,
+  Type VARCHAR(20) NOT NULL,
+  EName VARCHAR(20) NOT NULL,
+  PRIMARY KEY (RName),
+  FOREIGN KEY (EName) REFERENCES Entity(EName)
+);
+
+CREATE TABLE Is_Used_by
+(
+  Data_Type INT NOT NULL,
+  RName VARCHAR(20) NOT NULL,
+  AName VARCHAR(20) NOT NULL,
+  PRIMARY KEY (RName, AName),
+  FOREIGN KEY (RName) REFERENCES Relationship(RName),
+  FOREIGN KEY (AName) REFERENCES Attribute(AName)
+);
+
+CREATE TABLE Relates
+(
+  Cardinality CHAR(1) NOT NULL,
+  Min_Card VARCHAR(2) NOT NULL,
+  Max_Card VARCHAR(2) NOT NULL,
+  RName VARCHAR(20) NOT NULL,
+  EName VARCHAR(20) NOT NULL,
+  PRIMARY KEY (RName, EName),
+  FOREIGN KEY (RName) REFERENCES Relationship(RName),
+  FOREIGN KEY (EName) REFERENCES Entity(EName)
+);
+
+CREATE TABLE Contains
+(
+  Data_Type VARCHAR(20) NOT NULL,
+  Is_Key CHAR(1) NOT NULL,
+  Key_Type VARCHAR(20) NOT NULL,
+  AName VARCHAR(20) NOT NULL,
+  EName VARCHAR(20) NOT NULL,
+  PRIMARY KEY (AName, EName),
+  FOREIGN KEY (AName) REFERENCES Attribute(AName),
+  FOREIGN KEY (EName) REFERENCES Entity(EName)
+);
+
+CREATE TABLE Derives
+(
+  Data_Type VARCHAR(20) NOT NULL,
+  ANameBase VARCHAR(20) NOT NULL,
+  ANameDerived VARCHAR(20) NOT NULL,
+  FOREIGN KEY (ANameBase) REFERENCES Attribute(AName),
+  FOREIGN KEY (ANameDerived) REFERENCES Attribute(AName)
+);
+
+CREATE TABLE Is_In
+(
+  Data_Type VARCHAR(20) NOT NULL,
+  ANameOne VARCHAR(20) NOT NULL,
+  ANameTwo VARCHAR(20) NOT NULL,
+  FOREIGN KEY (ANameOne) REFERENCES Attribute(AName),
+  FOREIGN KEY (ANameTwo) REFERENCES Attribute(AName)
+);

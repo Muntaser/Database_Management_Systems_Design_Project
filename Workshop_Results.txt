@@ -1,0 +1,141 @@
+SQL> 
+SQL> --
+SQL> -- Team Number: 8
+SQL> -- Team Members: Paul S Thong Thong, Sharjeel Khan, Tamer Maklad, Khan Muntaser
+SQL> -- My SQL Statements
+SQL> --
+SQL> 
+SQL> --
+SQL> -- reduce the widths of column being printed
+SQL> -- column cname format A10;
+SQL> -- column bname format A15;
+SQL> --
+SQL> 
+SQL> -- Q1: Show the name of customers who live in MPLS
+SQL> -- and an account with a balance of more than
+SQL> -- 1200 in any branch of the bank except the
+SQL> -- France branch or customers who live in Edina
+SQL> -- and have only loan and the loan is in France
+SQL> -- branch.
+SQL> 
+SQL> select distinct c.cname
+  2  from customer c, account a
+  3  where c.cname = a.cname
+  4  and lower(c.ccity) = 'mpls'
+  5  and a.bal > 1200
+  6  and lower(a.bname) != 'france'
+  7  union
+  8  select distinct c.cname
+  9  from customer c, loan l
+ 10  where c.cname = l.cname
+ 11  and lower(c.ccity) = 'edina'
+ 12  and lower(l.bname) = 'france';
+
+CNAME                                                                           
+---------------                                                                 
+Cook                                                                            
+James                                                                           
+
+SQL> 
+SQL> -- Q2: Show the name of all Customers who have an
+SQL> -- account in any branches of the bank with a
+SQL> -- balance of 1800 and a loan in the bank with an
+SQL> -- amount of 800 using only the Exists operation
+SQL> 
+SQL> select distinct a.cname
+  2  from account a
+  3  where a.bal = 1800 and
+  4  exists  (
+  5  			     select l.cname
+  6  			     from loan l
+  7  			     where l.amt = 800
+  8  			     and a.cname = l.cname
+  9  		     );
+
+no rows selected
+
+SQL> 
+SQL> -- Q3: Show the branch name and assets of all
+SQL> -- branches that have assets more than any assets
+SQL> -- of any branch in Edina and have one or more
+SQL> -- account holders living in Minnetonka and the
+SQL> -- average balance of the customers account(s) is
+SQL> -- more than $400.
+SQL> 
+SQL> select bname, assets
+  2  from branch
+  3  where
+  4   assets > ALL (
+  5  					     select assets
+  6  					     from branch
+  7  					     where lower(bcity) = 'edina'
+  8  				     )
+  9  intersect
+ 10  select b1.bname, assets
+ 11  from account a1, branch b1
+ 12  where a1.bname = b1.bname
+ 13  and a1.cname IN (select a2.cname
+ 14  		   from account a2, customer c1
+ 15  			       where a2.cname = c1.cname
+ 16  			       and lower(ccity) = 'minnetonka'
+ 17  			       group by a2.cname
+ 18  			       having avg(a2.bal) > 400 );
+
+no rows selected
+
+SQL> 
+SQL> -- Q4: Find the name of all branches in Edina that
+SQL> -- have assets more than 40,000 and the branch
+SQL> -- has loans with a balance of more than $1000 for
+SQL> -- those customers who live in Eden Prairie.
+SQL> 
+SQL> select distinct(b.bname)
+  2  from branch b, loan l, account a, customer c
+  3  where
+  4  l.bname = b.bname and
+  5  a.bname = b.bname and
+  6  c.cname = a.cname and
+  7  lower(b.bcity) = 'edina' and
+  8  b.assets > 40000 and
+  9  a.bal > 1000 and
+ 10  lower(c.ccity) = 'eden prairie';
+
+BNAME                                                                           
+---------------                                                                 
+York                                                                            
+Southdale                                                                       
+
+SQL> 
+SQL> --  Q5: Find the name of all customers who live in
+SQL> --  Minnetonka and one or more accounts in any
+SQL> --  branch in Edina and have a loan in every
+SQL> --  branch in Edina that has assets of less than
+SQL> --  100,000.
+SQL> 
+SQL> select distinct c1.cname
+  2  from customer c1, account a1
+  3  where c1.cname = a1.cname
+  4  and lower(c1.ccity) = 'minnetonka'
+  5  and a1.bname > ANY (select b1.bname
+  6  					     from branch b1
+  7  					     where lower(b1.bcity) = 'edina'
+  8  					     )
+  9  intersect
+ 10  select distinct l1.cname
+ 11  from loan l1, branch b1
+ 12  where l1.bname = b1.bname
+ 13  and lower(b1.bcity) = 'edina'
+ 14  and b1.assets < 100000
+ 15  group by l1.cname
+ 16  having count(l1.bname) = ALL (  select count(b2.bname)
+ 17  							     from branch b2
+ 18  							     where lower(b2.bcity) = 'edina'
+ 19  							     and b2.assets < 100000
+ 20  							     group by b2.bcity
+ 21  						     );
+
+no rows selected
+
+SQL> --
+SQL> -- Close the spool file
+SQL> spool off;

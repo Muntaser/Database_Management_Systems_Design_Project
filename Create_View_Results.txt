@@ -1,0 +1,159 @@
+SQL> 
+SQL> -- setup the width and height of the page to print
+SQL> --
+SQL> set linesize 80;
+SQL> set pagesize 64;
+SQL> 
+SQL> -- Set echo on so that you can see the input as well in the spool file
+SQL> set echo on;
+SQL> 
+SQL> --
+SQL> -- Team Number: 8
+SQL> -- Team Members: Paul S Thong Thong, Sharjeel Khan, Tamer Maklad, Khan Muntaser
+SQL> -- Create view  SQL Statements
+SQL> --
+SQL> 
+SQL> --
+SQL> -- reduce the widths of column being printed
+SQL> -- column cname format A10;
+SQL> -- column bname format A15;
+SQL> --
+SQL> 
+SQL> -- 1.   Ents_2hops:
+SQL> -- This view returns the name of every entity and
+SQL> -- (or entities) that are related to the 2 hops away
+SQL> 
+SQL> CREATE VIEW ENTS_2HOPS
+  2  (
+  3  	 RESULT
+  4  )
+  5  AS
+  6  	 SELECT DISTINCT
+  7  		CASE
+  8  		    WHEN r1_left.ENAME > r2_right.ename
+  9  		    THEN
+ 10  			(r2_right.ENAME || ',' || r1_left.ename)
+ 11  		    WHEN r1_left.ENAME < r2_right.ename
+ 12  		    THEN
+ 13  			(r1_left.ENAME || ',' || r2_right.ename)
+ 14  		END
+ 15  		    AS result
+ 16  	   FROM relates  r1_left,
+ 17  		relates  r1_right,
+ 18  		relates  r2_left,
+ 19  		relates  r2_right
+ 20  	  WHERE     -- must be same relationship r1
+ 21  			r1_left.RNAME = r1_right.RNAME
+ 22  		    -- r1 connects 2 differents entities a and b
+ 23  		AND r1_left.ENAME != r1_right.ENAME
+ 24  		    -- must be same relationship r2
+ 25  		AND r2_left.RNAME = r2_right.RNAME
+ 26  		    -- r2 connects 2 differents entities b and c
+ 27  		AND r2_left.ENAME != r2_right.ENAME
+ 28  			    -- r1 and r2 intersect b
+ 29  		AND r1_right.ENAME = r2_left.ENAME
+ 30  		    -- a is different to b
+ 31  		AND r1_left.ENAME != r2_right.ENAME
+ 32  			    -- r1 is not r2
+ 33  		AND r1_left.RNAME != r2_right.RNAME;
+
+View created.
+
+SQL> 
+SQL> -- 2.   Ents_2hops_attr: Repeat question 1 but this time print
+SQL> --      not only the name of the related entities but also the
+SQL> --      attributes of these entities. You will get extra credit
+SQL> --      if you can print all the attributes of the related entities on one line
+SQL> 
+SQL> CREATE VIEW ENTS_2HOPS_ATTR
+  2  (
+  3  	 RESULT
+  4  )
+  5  AS
+  6  	 WITH temp
+  7  	      AS (SELECT REGEXP_SUBSTR (e.RESULT,
+  8  					'[^,]+',
+  9  					1,
+ 10  					1)
+ 11  			     AS e1,
+ 12  			 REGEXP_SUBSTR (e.RESULT,
+ 13  					'[^,]+',
+ 14  					1,
+ 15  					2)
+ 16  			     AS e2
+ 17  		    FROM ENTS_2HOPS e)
+ 18  	   SELECT    t.E1
+ 19  		  || ','
+ 20  		  || t.E2
+ 21  		  || ','
+ 22  		  || LISTAGG (c.ANAME, ',') WITHIN GROUP (ORDER BY c.ANAME)
+ 23  		      AS attribs
+ 24  	     FROM temp t, contains c
+ 25  	    WHERE t.E2 = c.ENAME
+ 26  	 GROUP BY t.E1, t.E2;
+
+View created.
+
+SQL> 
+SQL> -- 3.   Rel_2Ent: This view returns the name of each relationship and
+SQL> --      the entity names connected to the relationship for those relationships
+SQL> --      that connect to only 2 entities and these entities have more than 2 attributes each
+SQL> 
+SQL> CREATE VIEW REL_2ENT
+  2  (
+  3  	 RNAME,
+  4  	 ENAME
+  5  )
+  6  AS
+  7  	 SELECT r.rname, r.ENAME
+  8  	   FROM relates r
+  9  	  WHERE     r.ename IN (  SELECT c.ENAME
+ 10  				    FROM contains c
+ 11  				GROUP BY c.ENAME
+ 12  				  HAVING COUNT (c.ANAME) > 2)
+ 13  		AND r.RNAME IN (  SELECT r.rname
+ 14  				    FROM relates r
+ 15  				GROUP BY r.RNAME
+ 16  				  HAVING COUNT (DISTINCT r.ename) = 2);
+
+View created.
+
+SQL> 
+SQL> 
+SQL> -- 4.   Spec_Super_Ent: This view returns the name of each specialization,
+SQL> --      the super type entity name and its attributes
+SQL> 
+SQL> CREATE VIEW SPEC_SUPER_ENT
+  2  (
+  3  	 SNAME,
+  4  	 ENAME,
+  5  	 ANAME
+  6  )
+  7  AS
+  8  	 SELECT sp.SNAME, sp.ENAME, c.ANAME
+  9  	   FROM specialization sp, contains c
+ 10  	  WHERE sp.sname = c.ENAME;
+
+View created.
+
+SQL> 
+SQL> --  5.  Spec_Sub_Ents: This view returns the name of each specialization,
+SQL> --      the sub_type entity names and their attributes.
+SQL> 
+SQL> CREATE VIEW SPEC_SUB_ENTS
+  2  (
+  3  	 SNAME,
+  4  	 ENAME,
+  5  	 ANAME
+  6  )
+  7  AS
+  8  	 SELECT s.SNAME, s.ENAME, c.ANAME
+  9  	   FROM sub s, contains c
+ 10  	  WHERE s.sname = c.ENAME;
+
+View created.
+
+SQL> 
+SQL> --
+SQL> -- Close the spool file
+SQL> spool off;
